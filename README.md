@@ -1,5 +1,5 @@
 # other-side
-"What's on the other site of the earth" in 3D
+"What's on the other side of the earth" in 3D
 
 Made with Esri ArcGIS API for JavaScript 4.0beta1.
 
