@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Other side of the world</title></p>
+<style>
+  html, body {
+    padding: 0;
+    margin: 0;
+  }
+</style>
+<link rel="stylesheet" href="https://js.arcgis.com/4.0beta1/esri/css/esri.css">
+<script src="https://js.arcgis.com/4.0beta1/"></script>
+<script>
+var map, view;
+require([
+  "esri/geometry/SpatialReference",
+  "esri/Map",
+  "esri/Camera",
+  "esri/views/SceneView",
+  "esri/layers/GraphicsLayer",
+
+  "esri/Graphic",
+  "esri/geometry/Point",
+  "esri/geometry/Polyline",
+
+  "esri/symbols/SimpleMarkerSymbol",
+  "esri/symbols/SimpleLineSymbol",
+
+  "esri/Color",
+  "dojo/domReady!",
+], function(SpatialReference, Map, Camera, SceneView, GraphicsLayer, Graphic, Point, Polyline, SimpleMarkerSymbol, SimpleLineSymbol, Color){
+  sr = new SpatialReference(3785); // web mercator
+
+  map = new Map({
+    basemap: "oceans"
+  });
+
+  view = new SceneView({
+    container: "viewDiv",
+    map: map,
+    spatialReference: sr,
+    camera: {
+      position: {
+        x: 0,
+        y: 0,
+        z: 100000000
+      }
+    },
+  });
+
+  // use this to change the basemap's opactiy, but there's still a gray layer with gridlines underneath
+  //map.basemap._baseLayers._items[0].opacity= 0.5;
+
+  map.on('load', function(){
+    if(navigator.geolocation) {  
+      navigator.geolocation.getCurrentPosition(geoLocationSuccess, geoLocationError);
+    } 
+  });
+
+  view.on('click', function(evt){
+    var point = new Point({
+      x: evt.mapPoint.longitude,
+      y: evt.mapPoint.latitude
+    });
+    drawPositions(point);
+  });
+
+  geoLocationSuccess = function(location){
+    console.log(location);
+    var point_user = new Point({
+      x: location.coords.longitude,
+      y: location.coords.latitude
+    });
+    drawPositions(point_user);
+  };
+  geoLocationError = function(error){
+    console.log(error);
+  };
+
+  var graphicsLayer = new GraphicsLayer();
+  graphicsLayer.set('elevationInfo', {
+    mode: 'relativeToGround'
+  });
+  map.add(graphicsLayer);
+
+  drawPoles = function() {
+    var polyline_poles = new Polyline([
+      [0, 90, 1000000],
+      [0, -90, 1000000]
+    ]);
+    var lineSymbol_poles = new SimpleLineSymbol({
+      color: [255, 255, 255],
+      width: 1
+    });
+    var polylineGraphic_poles = new Graphic({
+      geometry: polyline_poles,
+      symbol: lineSymbol_poles
+    });
+    graphicsLayer.add(polylineGraphic_poles);
+  }();
+
+  drawPositions = function(chosenLocation){
+    var point_user = chosenLocation;
+
+    var color = [
+      55+Math.floor(Math.random()*200),
+      55+Math.floor(Math.random()*200),
+      55+Math.floor(Math.random()*200)
+    ];
+
+    var point_otherside = new Point({
+      x: 180.0+point_user.x,
+      y: -point_user.y
+    });
+    var markerSymbol = new SimpleMarkerSymbol({
+      color: color,
+      size: 10,
+      outline: new SimpleLineSymbol({
+        color: color,
+        width: 0
+      })
+    });
+
+    var pointGraphic_user = new Graphic({
+      geometry: point_user,
+      symbol: markerSymbol
+    });
+    var pointGraphic_otherside = new Graphic({
+      geometry: point_otherside,
+      symbol: markerSymbol
+    });
+
+    var polyline_through = new Polyline([
+      [point_user.x, point_user.y, 1000000],
+      [point_otherside.x, point_otherside.y, 1000000]
+    ]);
+    var lineSymbol = new SimpleLineSymbol({
+      color: color,
+      width: 4
+    });
+    var polylineGraphic_through = new Graphic({
+      geometry: polyline_through,
+      symbol: lineSymbol
+    });
+
+    graphicsLayer.add(pointGraphic_user);
+    graphicsLayer.add(pointGraphic_otherside);
+    graphicsLayer.add(polylineGraphic_through);
+
+    window.setTimeout(function(){
+    view.animateTo({
+      position: {
+        x: point_otherside.x,
+        y: point_otherside.y,
+        z: 10000000
+      }
+    });
+    }, 500);
+  };
+});
+</script>
+</head>
+<body>
+  <div id="viewDiv"></div>
+</body>
+</html>
